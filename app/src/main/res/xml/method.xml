@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+/**
+ * Copyright (c) 2008, The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at 
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0 
+ *
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
+ */
+-->
+
+<!-- The attributes in this XML file provide configuration information -->
+<!-- for the Search Manager. -->
+
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+        android:settingsActivity="com.blackcj.customkeyboard.ImePreferences"
+        android:supportsSwitchingToNextInputMethod="true"
+>
+    <subtype
+        android:label="@string/label_subtype_en_GB"
+        android:imeSubtypeLocale="en_GB"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_de_DE"
+        android:imeSubtypeLocale="de_DE"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_nl_NL"
+        android:imeSubtypeLocale="nl_NL"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_da_DA"
+        android:imeSubtypeLocale="da_DA"
+        android:imeSubtypeMode="keyboard" />
+
+    <subtype
+        android:label="@string/label_subtype_fy_FRY"
+        android:imeSubtypeLocale="fry_FRY"
+        android:imeSubtypeMode="keyboard" />
+
+    <subtype
+    android:label="@string/label_subtype_frs_FRS"
+    android:imeSubtypeLocale="frs_FRS"
+    android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_gos_GOS"
+        android:imeSubtypeLocale="gos_GOS"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+    android:label="@string/label_subtype_stq_STQ"
+    android:imeSubtypeLocale="stq_STQ"
+    android:imeSubtypeMode="keyboard" />
+
+    <subtype
+        android:label="@string/label_subtype_frr_SÖL"
+        android:imeSubtypeLocale="frr_SÖL"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_FER"
+        android:imeSubtypeLocale="frr_FER"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_ÖÖM"
+        android:imeSubtypeLocale="frr_ÖÖM"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_HAL"
+        android:imeSubtypeLocale="frr_HAL"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_WIR"
+        android:imeSubtypeLocale="frr_WIR"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_MOO"
+        android:imeSubtypeLocale="frr_MOO"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_KAR"
+        android:imeSubtypeLocale="frr_KAR"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_GOO"
+        android:imeSubtypeLocale="frr_GOO"
+        android:imeSubtypeMode="keyboard" />
+    <subtype
+        android:label="@string/label_subtype_frr_HFR"
+        android:imeSubtypeLocale="frr_HFR"
+        android:imeSubtypeMode="keyboard" />
+
+    <subtype
+        android:label="@string/label_subtype_ofs_OFS"
+        android:imeSubtypeLocale="ofs_OFS"
+        android:imeSubtypeMode="keyboard" />
+
+</input-method>
