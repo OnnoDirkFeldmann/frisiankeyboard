@@ -19,7 +19,7 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Title for Latin keyboard  -->
-    <string name="version">1152</string>
+    <string name="version">1154</string>
 
     <!-- Title for Latin keyboard  -->
     <string name="ime_name">Interfrisian Keyboard</string>
