@@ -8,7 +8,7 @@ android {
         applicationId 'com.frisian.keyboard'
         minSdkVersion 19
         targetSdkVersion 34
-        versionCode 1157
+        versionCode 1158
     }
     buildTypes {
         release {
