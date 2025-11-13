@@ -7,8 +7,8 @@ android {
     defaultConfig {
         applicationId 'com.frisian.keyboard'
         minSdkVersion 19
-        targetSdkVersion 35
-        versionCode 1159
+        targetSdkVersion 36
+        versionCode 1160
     }
     buildTypes {
         release {
