@@ -21,8 +21,9 @@
 <!-- for the Search Manager. -->
 
 <input-method xmlns:android="http://schemas.android.com/apk/res/android"
-        android:settingsActivity="com.blackcj.customkeyboard.ImePreferences"
+        android:settingsActivity="com.frisian.keyboard.ImePreferences"
         android:supportsSwitchingToNextInputMethod="true"
+        android:isDefault="false"
 >
     <subtype
         android:label="@string/label_subtype_en_GB"

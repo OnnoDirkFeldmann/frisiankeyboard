@@ -24,4 +24,7 @@
     <dimen name="candidate_vertical_padding">18sp</dimen> //16
     <dimen name="vertical_gap">0px</dimen> //0
     <dimen name="horizontal_gap">0px</dimen> //0
+    <dimen name="message_font_height">14sp</dimen>
+    <dimen name="message_padding">10dp</dimen>
+    <dimen name="message_corner_radius">12dp</dimen>
 </resources>

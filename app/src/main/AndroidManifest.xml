@@ -20,11 +20,11 @@
             <meta-data android:name="android.view.im" android:resource="@xml/method" />
         </service>
     </application>
-    <uses-permission android:name="android.permission.BIND_TEXT_SERVICE"
-    tools:ignore="ProtectedPermissions" />
+    <!-- Only used for the automatic setup during development (see tools/setup-keyboard.bat).
+         A normal installation never gets this permission, the app then guides the user
+         through the system settings instead. -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE" />
 </manifest>

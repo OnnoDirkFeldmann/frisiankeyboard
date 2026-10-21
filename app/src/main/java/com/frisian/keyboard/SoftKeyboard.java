@@ -27,7 +27,9 @@ import android.inputmethodservice.Keyboard;
 import android.inputmethodservice.KeyboardView;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import androidx.annotation.RequiresApi;
 import android.text.InputType;
 import android.text.method.MetaKeyKeyListener;
@@ -61,6 +63,12 @@ import java.util.Locale;
 public class SoftKeyboard extends InputMethodService
         implements KeyboardView.OnKeyboardActionListener, SpellCheckerSession.SpellCheckerSessionListener {
     static final boolean DEBUG = true;
+    private static final String TAG = "FrisianKeyboard";
+
+    /** How long a status message is shown. */
+    private static final int MESSAGE_DURATION_SHORT = 2000;
+    /** How long an error message is shown. */
+    private static final int MESSAGE_DURATION_LONG = 3500;
 
     /**
      * This boolean indicates the optional example code for performing
@@ -101,6 +109,8 @@ public class SoftKeyboard extends InputMethodService
     private Bundle mBun;
     private InputMethodSubtype mSubtype;
     private DatabaseHelper mSQL;
+    private boolean mSyncInProgress;
+    private boolean mDictionaryUpToDate;
 
 
 
@@ -112,7 +122,6 @@ public class SoftKeyboard extends InputMethodService
     @Override public void onCreate() {
         super.onCreate();
         mSQL = new DatabaseHelper(SoftKeyboard.this);
-        DB();
         mInputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
         mWordSeparators = getResources().getString(R.string.word_separators);
         final TextServicesManager tsm = (TextServicesManager) getSystemService(
@@ -120,33 +129,84 @@ public class SoftKeyboard extends InputMethodService
         updatelang();
         mScs = tsm.newSpellCheckerSession(null, null, this, true);
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_DISPLAY);
+        ensureDictionary();
     }
 
-    private void DB(){
-        try {
-            mSQL.createDataBase();
-        } catch (Exception e) {
-            Toast.makeText(SoftKeyboard.this, "Unable to create dictionary", Toast.LENGTH_SHORT).show();
-            throw new Error("Unable to create dictionary");
+    /**
+     * Makes sure the bundled dictionary is installed and matches the app version.
+     * When it is missing or outdated the copy runs in the background and the
+     * database is reopened as soon as it is ready.
+     */
+    private void ensureDictionary() {
+        if (mSQL.needsAutoSync()) {
+            notifyUser(mSQL.isDatabasePresent() ? "Updating dictionary…" : "Installing dictionary…");
+            mSQL.syncDictionary(new DatabaseHelper.SyncCallback() {
+                @Override
+                public void onSyncDone(boolean success) {
+                    if (success) {
+                        reopenDictionary();
+                    } else {
+                        notifyUser("Could not install the dictionary", MESSAGE_DURATION_LONG);
+                    }
+                }
+            });
+            return;
         }
+        reopenDictionary();
+    }
+
+    private void reopenDictionary() {
         try {
             mSQL.openDataBase();
-        } catch (Exception e) {
-            Toast.makeText(SoftKeyboard.this, "Error opening dictionary", Toast.LENGTH_SHORT).show();
-            throw e;
-        }
-        try {
             mSQL.runpragma();
+            mDictionaryUpToDate = mSQL.isUpToDate();
         } catch (Exception e) {
-            Toast.makeText(SoftKeyboard.this, "Error setting PRAGMA "+ e.getMessage(), Toast.LENGTH_SHORT).show();
-            throw e;
+            notifyUser(e.getMessage(), MESSAGE_DURATION_LONG);
+        }
+    }
+
+    /**
+     * Shows a short message to the user. Inside the keyboard this is drawn on the
+     * keyboard itself, because {@link Toast} is unreliable when posted from an
+     * input method service (it is rate limited / suppressed on newer Android
+     * versions). The drawing is styled like a toast so that both look the same.
+     */
+    private void notifyUser(final String message) {
+        notifyUser(message, MESSAGE_DURATION_SHORT);
+    }
+
+    private void notifyUser(final String message, final int durationMillis) {
+        if (message == null) {
+            return;
+        }
+        Log.d(TAG, message);
+        if (mInputView != null) {
+            mInputView.showMessage(message, durationMillis);
+        } else {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(SoftKeyboard.this, message,
+                            durationMillis >= MESSAGE_DURATION_LONG
+                                    ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 
     private void updatelang()
     {
+        InputMethodSubtype subtype = mInputMethodManager.getCurrentInputMethodSubtype();
+        if (subtype == null) {
+            return;
+        }
+        updateLanguage(subtype.getLocale());
+    }
+
+    private void updateLanguage(String localeCode)
+    {
         String lang = "";
-        mLocaleCode = mInputMethodManager.getCurrentInputMethodSubtype().getLocale();
+        mLocaleCode = localeCode;
         mLanguage = new Locale(mLocaleCode);
         switch(mLocaleCode) {
             case "en_GB":
@@ -204,7 +264,9 @@ public class SoftKeyboard extends InputMethodService
                 lang = getResources().getString(R.string.label_subtype_ofs_OFS);
                 break;
         }
-        Toast.makeText(getApplicationContext(), lang, Toast.LENGTH_SHORT).show();
+        if (!lang.isEmpty()) {
+            notifyUser(lang);
+        }
     }
 
     /**
@@ -379,32 +441,77 @@ public class SoftKeyboard extends InputMethodService
         mSubtype = mInputMethodManager.getCurrentInputMethodSubtype();
         mInputView.setSubtypeOnSpaceKey(mSubtype);
         doapplicationchecks();
+        preselectDefaultLanguage();
+    }
+
+    /**
+     * The keyboard starts with English instead of the language of the system.
+     *
+     * <p>{@link #switchInputMethod(String, InputMethodSubtype)} may be used by the
+     * current input method without any permission, so this works for a normal
+     * installation as well. It only happens once: as soon as the user picks a
+     * language themselves it is never overwritten again.
+     */
+    private void preselectDefaultLanguage() {
+        if (ImeSetup.isLanguagePreselected(this)) {
+            return;
+        }
+        InputMethodSubtype current = mInputMethodManager.getCurrentInputMethodSubtype();
+        if (current != null && ImeSetup.DEFAULT_LOCALE.equals(current.getLocale())) {
+            // English is already active, nothing to do.
+            ImeSetup.markLanguagePreselected(this);
+            return;
+        }
+        final InputMethodSubtype english = ImeSetup.findSubtype(this, ImeSetup.DEFAULT_LOCALE);
+        if (english == null) {
+            return;
+        }
+        ImeSetup.markLanguagePreselected(this);
+        final String imeId = ImeSetup.getImeId(this);
+        // Post it, switching the subtype restarts the input view.
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    switchInputMethod(imeId, english);
+                } catch (Exception e) {
+                    Log.w(TAG, "Could not preselect the language: " + e.getMessage());
+                }
+            }
+        });
     }
 
     private void doapplicationchecks() {
-        String dbversion = "";
-        String curversion = getResources().getString(R.string.version);;
-        try {
-            Cursor cur = mSQL.rawquery("SELECT version FROM version LIMIT 1", null);
-            if (cur.moveToFirst()) {
-                do {
-                    dbversion = cur.getString(0);
-                } while (cur.moveToNext());
-            }
-            cur.close();
-
-            if (!dbversion.equals(curversion)){
-                Toast.makeText(this, "Your dictionary version "+dbversion+" doesn't match the supposed version "+curversion+". Please update your dictionary!", Toast.LENGTH_LONG).show();
-            }
+        if (mSyncInProgress || !mSQL.isOpen() || mDictionaryUpToDate) {
+            return;
         }
-        catch (Exception e){
-            handleexception(e);
+        if (!mSQL.needsAutoSync()) {
+            mDictionaryUpToDate = true;
+            return;
         }
+        mSyncInProgress = true;
+        notifyUser("Updating dictionary…");
+        mSQL.syncDictionary(new DatabaseHelper.SyncCallback() {
+            @Override
+            public void onSyncDone(boolean success) {
+                mSyncInProgress = false;
+                if (success) {
+                    reopenDictionary();
+                }
+            }
+        });
     }
 
     @Override
     public void onCurrentInputMethodSubtypeChanged(InputMethodSubtype subtype) {
-        mInputView.setSubtypeOnSpaceKey(subtype);
+        super.onCurrentInputMethodSubtypeChanged(subtype);
+        if (mInputView != null) {
+            mInputView.setSubtypeOnSpaceKey(subtype);
+        }
+        if (subtype != null) {
+            // The dictionary table depends on the active language.
+            updateLanguage(subtype.getLocale());
+        }
     }
 
     /**
@@ -727,12 +834,31 @@ public class SoftKeyboard extends InputMethodService
         }
     }
 
+    /**
+     * The name of the dictionary table for the active language. Only simple table
+     * names are accepted, they are used as identifiers in the SQL statements.
+     */
+    private String localeTable() {
+        if (mLocaleCode == null) {
+            return null;
+        }
+        if (!mLocaleCode.matches("[\\p{L}\\p{N}_]+")) {
+            return null;
+        }
+        return mLocaleCode;
+    }
+
     private void increaseFrequency (String word){
         //Quote entfernen
         word = word.replace("\"", "");
+        String table = localeTable();
+        if (table == null) {
+            return;
+        }
         try {
-            Cursor cur = mSQL.rawquery("UPDATE " + mLocaleCode + " SET frequency = frequency + 1 WHERE word = \"" + word + "\"", null);
-            cur.moveToFirst();
+            mSQL.execStatement(
+                    "UPDATE " + table + " SET frequency = frequency + 1 WHERE word = ?",
+                    new String[]{word});
         }
         catch (Exception e){
             handleexception(e);
@@ -743,15 +869,21 @@ public class SoftKeyboard extends InputMethodService
         //Quote entfernen
         word = word.replace("\"", "");
         ArrayList<String> list = new ArrayList<String>();
+        String table = localeTable();
+        if (table == null) {
+            return list;
+        }
         String args [] = { word+"%" };
         try {
-            Cursor cur = mSQL.rawquery("SELECT word FROM " + mLocaleCode + " WHERE word LIKE ? ORDER BY frequency DESC LIMIT 25 ", args);
-            if (cur.moveToFirst()) {
-                do {
-                    list.add(cur.getString(0));
-                } while (cur.moveToNext());
+            Cursor cur = mSQL.rawquery("SELECT word FROM " + table + " WHERE word LIKE ? ORDER BY frequency DESC LIMIT 25 ", args);
+            if (cur != null) {
+                if (cur.moveToFirst()) {
+                    do {
+                        list.add(cur.getString(0));
+                    } while (cur.moveToNext());
+                }
+                cur.close();
             }
-            cur.close();
         }
         catch (Exception e){
             handleexception(e);
@@ -761,16 +893,21 @@ public class SoftKeyboard extends InputMethodService
     private boolean isindic(String word){
         //Quote entfernen
         word = word.replace("\"", "");
-        ArrayList<String> list = new ArrayList<String>();
         Integer i = 0;
+        String table = localeTable();
+        if (table == null) {
+            return false;
+        }
         try {
-            Cursor cur = mSQL.rawquery("SELECT COUNT(word) FROM " + mLocaleCode + " WHERE word = \"" + word + "\"", null);
-            if (cur.moveToFirst()) {
-                do {
-                    i = cur.getInt(0);
-                } while (cur.moveToNext());
+            Cursor cur = mSQL.rawquery("SELECT COUNT(word) FROM " + table + " WHERE word = ?", new String[]{word});
+            if (cur != null) {
+                if (cur.moveToFirst()) {
+                    do {
+                        i = cur.getInt(0);
+                    } while (cur.moveToNext());
+                }
+                cur.close();
             }
-            cur.close();
         }
         catch (Exception e){
             handleexception(e);
@@ -784,9 +921,14 @@ public class SoftKeyboard extends InputMethodService
     private void addtodic(String word){
         //Quote entfernen
         word = word.replace("\"", "");
+        String table = localeTable();
+        if (table == null) {
+            return;
+        }
         try {
-            Cursor cur = mSQL.rawquery("INSERT INTO "+ mLocaleCode +" (word, frequency) VALUES(\""+word+"\", 1)", null);
-            cur.moveToFirst();
+            mSQL.execStatement(
+                    "INSERT INTO " + table + " (word, frequency) VALUES(?, 1)",
+                    new String[]{word});
         }
         catch (Exception e){
             handleexception(e);
@@ -996,11 +1138,12 @@ public class SoftKeyboard extends InputMethodService
     }
 
     public void handleexception (Exception e){
-        if (e.getMessage().contains("no such table")){
-            Toast.makeText(this, "Please update your dictionary!", Toast.LENGTH_LONG).show();
+        String message = e.getMessage();
+        if (message != null && message.contains("no such table")){
+            notifyUser("Please update your dictionary!", MESSAGE_DURATION_LONG);
         }
         else{
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+            notifyUser(message, MESSAGE_DURATION_LONG);
         }
     }
 

@@ -19,7 +19,7 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Title for Latin keyboard  -->
-    <string name="version">1163</string>
+    <string name="version">1164</string>
 
     <!-- Title for Latin keyboard  -->
     <string name="ime_name">Interfrisian Keyboard</string>
@@ -62,4 +62,28 @@
     <string name="select_language">Select input languages</string>
     <string name="general_category">General</string>
     <string name="installdic">Install dictionary</string>
+
+    <!-- Setup screen -->
+    <string name="setup_enable_manual">Tap to open the keyboard settings and enable the app.</string>
+    <string name="setup_enable_auto">Tap to enable the app automatically.</string>
+    <string name="setup_enable_done">The keyboard is enabled.</string>
+    <string name="setup_default_manual">Tap to open the keyboard picker and select the app.</string>
+    <string name="setup_default_auto">Tap to select the app as default automatically.</string>
+    <string name="setup_default_done">The keyboard is the default.</string>
+    <string name="setup_dict_missing">No dictionary installed yet. Tap to install it.</string>
+    <string name="setup_languages_manual">Tap to open the language picker of the keyboard.</string>
+    <string name="setup_enable_first">Please enable the keyboard first.</string>
+    <string name="setup_dict_current">Dictionary is up to date.</string>
+    <string name="setup_dict_outdated">A newer dictionary is available. Tap to update it.</string>
+    <string name="ime_enabled">Keyboard enabled.</string>
+    <string name="ime_default_set">Keyboard set as default.</string>
+    <string name="dict_updated">Dictionary updated.</string>
+    <string name="dict_error">Could not update the dictionary.</string>
+    <string name="dict_deleted">Dictionary deleted.</string>
+
+    <!-- First run setup -->
+    <string name="setup_dialog_title">Set up the keyboard</string>
+    <string name="setup_dialog_message">The Interfrisian Keyboard has to be enabled in the system settings and selected as the default keyboard. The app takes care of the rest, including the dictionary.</string>
+    <string name="setup_dialog_start">Set up now</string>
+    <string name="setup_dialog_later">Later</string>
 </resources>
